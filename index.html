@@ -702,14 +702,16 @@
                 }
             });
             
-            // 活动图表 - 动态获取 GitHub 贡献数据（当前年份1月-12月）
+            // 活动图表 - 动态获取 GitHub 贡献数据（当前年份1月-12月，UTC+8 北京时间）
             const ctx = document.getElementById('activityChart');
             if (ctx) {
                 const isDark = htmlElement.classList.contains('dark');
                 const textColor = isDark ? '#9CA3AF' : '#4B5563';
                 const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
-                const now = new Date();
-                const currentYear = now.getFullYear();
+
+                // 使用 UTC+8 北京时间获取当前年份
+                const nowBeijing = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+                const currentYear = nowBeijing.getFullYear();
 
                 // 更新标题显示当前年份范围
                 const chartTitle = document.getElementById('activityChartTitle');
@@ -768,9 +770,10 @@
 
                         (data || []).forEach(event => {
                             if (event.type === 'PushEvent') {
-                                const d = new Date(event.created_at);
-                                if (d.getFullYear() === currentYear) {
-                                    const monthIdx = d.getMonth();
+                                // GitHub API 返回 UTC 时间，转为北京时间判断年月
+                                const dBeijing = new Date(new Date(event.created_at).toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+                                if (dBeijing.getFullYear() === currentYear) {
+                                    const monthIdx = dBeijing.getMonth();
                                     monthlyCommits[monthIdx] += (event.payload.commits || []).length || 1;
                                 }
                             }
