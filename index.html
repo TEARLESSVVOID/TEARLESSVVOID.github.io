@@ -702,38 +702,26 @@
                 }
             });
             
-            // 活动图表 - 动态获取 GitHub 贡献数据（近12个月）
+            // 活动图表 - 动态获取 GitHub 贡献数据（当前年份1月-12月）
             const ctx = document.getElementById('activityChart');
             if (ctx) {
                 const isDark = htmlElement.classList.contains('dark');
                 const textColor = isDark ? '#9CA3AF' : '#4B5563';
                 const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
                 const now = new Date();
+                const currentYear = now.getFullYear();
 
-                // 生成近12个月的标签（含年份），如 "25/06"
-                const labels = [];
-                const labelDates = [];
-                for (let i = 11; i >= 0; i--) {
-                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    const shortYear = String(d.getFullYear()).slice(2);
-                    labels.push(shortYear + '/' + String(d.getMonth() + 1).padStart(2, '0'));
-                    labelDates.push(d);
-                }
-
-                // 更新标题显示时间范围
-                const firstLabel = labelDates[0];
-                const lastLabel = labelDates[11];
-                const rangeStr = firstLabel.getFullYear() + '年' + (firstLabel.getMonth() + 1) + '月 - ' + lastLabel.getFullYear() + '年' + (lastLabel.getMonth() + 1) + '月';
+                // 更新标题显示当前年份范围
                 const chartTitle = document.getElementById('activityChartTitle');
                 if (chartTitle) {
-                    chartTitle.textContent = 'GitHub 活动概览（' + rangeStr + '）';
+                    chartTitle.textContent = 'GitHub 活动概览（' + currentYear + '年1月 - ' + currentYear + '年12月）';
                 }
 
                 // 先用占位数据初始化图表
                 const chart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: labels,
+                        labels: monthNames,
                         datasets: [{
                             label: '代码提交',
                             data: new Array(12).fill(0),
@@ -753,9 +741,7 @@
                                 intersect: false,
                                 callbacks: {
                                     title: function(items) {
-                                        const idx = items[0].dataIndex;
-                                        const d = labelDates[idx];
-                                        return d.getFullYear() + '年' + monthNames[d.getMonth()];
+                                        return currentYear + '年' + monthNames[items[0].dataIndex];
                                     }
                                 }
                             }
@@ -779,17 +765,13 @@
                     .then(res => res.json())
                     .then(data => {
                         const monthlyCommits = new Array(12).fill(0);
-                        const oldestMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
                         (data || []).forEach(event => {
                             if (event.type === 'PushEvent') {
                                 const d = new Date(event.created_at);
-                                if (d >= oldestMonth) {
-                                    const monthsAgo = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
-                                    const idx = 11 - monthsAgo;
-                                    if (idx >= 0 && idx < 12) {
-                                        monthlyCommits[idx] += (event.payload.commits || []).length || 1;
-                                    }
+                                if (d.getFullYear() === currentYear) {
+                                    const monthIdx = d.getMonth();
+                                    monthlyCommits[monthIdx] += (event.payload.commits || []).length || 1;
                                 }
                             }
                         });
