@@ -752,19 +752,20 @@
                         const now = new Date();
                         const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
 
-                        (data.contributions || []).forEach(c => {
-                            const d = new Date(c.date);
-                            if (d >= oneYearAgo) {
-                                const monthIdx = d.getMonth();
-                                monthlyCommits[monthIdx] += c.count || 0;
-                            }
+                        (data.contributions || []).forEach(week => {
+                            (week || []).forEach(c => {
+                                const d = new Date(c.date);
+                                if (d >= oneYearAgo) {
+                                    const monthIdx = d.getMonth();
+                                    monthlyCommits[monthIdx] += c.contributionCount || 0;
+                                }
+                            });
                         });
 
                         chart.data.datasets[0].data = monthlyCommits;
                         chart.update();
                     })
                     .catch(() => {
-                        // 如果 API 挂了，用静态数据兜底
                         chart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 9, 9, 10, 1, 1, 0];
                         chart.update();
                     });
