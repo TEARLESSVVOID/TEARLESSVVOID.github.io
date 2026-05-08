@@ -744,22 +744,22 @@
                     }
                 });
 
-                // 异步获取真实 GitHub 贡献数据
-                fetch('https://github-contributions-api.deno.dev/TEARLESSVVOID.json')
+                // 异步获取真实 GitHub 活动数据（使用 Events API）
+                fetch('https://api.github.com/users/TEARLESSVVOID/events/public?per_page=100')
                     .then(res => res.json())
                     .then(data => {
                         const monthlyCommits = new Array(12).fill(0);
                         const now = new Date();
                         const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
 
-                        (data.contributions || []).forEach(week => {
-                            (week || []).forEach(c => {
-                                const d = new Date(c.date);
+                        (data || []).forEach(event => {
+                            if (event.type === 'PushEvent') {
+                                const d = new Date(event.created_at);
                                 if (d >= oneYearAgo) {
                                     const monthIdx = d.getMonth();
-                                    monthlyCommits[monthIdx] += c.contributionCount || 0;
+                                    monthlyCommits[monthIdx] += (event.payload.commits || []).length || 1;
                                 }
-                            });
+                            }
                         });
 
                         chart.data.datasets[0].data = monthlyCommits;
