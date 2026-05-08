@@ -497,13 +497,13 @@
 </picture></p>
 <hr />
 <h2 id="tech-stack">🛠️ Tech Stack 技术栈</h2>
-<p><img alt="Lua" src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&amp;logo=lua&amp;logoColor=white" />
-<img alt="C#" src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&amp;logo=csharp&amp;logoColor=white" />
-<img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&amp;logo=javascript&amp;logoColor=black" />
-<img alt="HTML5" src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&amp;logo=html5&amp;logoColor=white" />
-<img alt="CSS3" src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&amp;logo=css3&amp;logoColor=white" />
-<img alt="FiveM" src="https://img.shields.io/badge/FiveM-FF8C00?style=for-the-badge&amp;logo=fivem&amp;logoColor=white" />
-<img alt=".NET" src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&amp;logo=dotnet&amp;logoColor=white" />
+<p><img alt="Lua" src="https://img.shields.io/badge/Lua-2C2D72?style=for-the-badge&amp;logo=lua&amp;logoColor=white" /><br/>
+<img alt="C#" src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&amp;logo=csharp&amp;logoColor=white" /><br/>
+<img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&amp;logo=javascript&amp;logoColor=black" /><br/>
+<img alt="HTML5" src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&amp;logo=html5&amp;logoColor=white" /><br/>
+<img alt="CSS3" src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&amp;logo=css3&amp;logoColor=white" /><br/>
+<img alt="FiveM" src="https://img.shields.io/badge/FiveM-FF8C00?style=for-the-badge&amp;logo=fivem&amp;logoColor=white" /><br/>
+<img alt=".NET" src="https://img.shields.io/badge/.NET-512BD4?style=for-the-badge&amp;logo=dotnet&amp;logoColor=white" /><br/>
 <img alt="Git" src="https://img.shields.io/badge/Git-F05032?style=for-the-badge&amp;logo=git&amp;logoColor=white" /></p>
 <hr />
 <h2 id="github-stats">📊 GitHub Stats 统计</h2>
@@ -702,19 +702,21 @@
                 }
             });
             
-            // 活动图表
+            // 活动图表 - 动态获取 GitHub 贡献数据
             const ctx = document.getElementById('activityChart');
             if (ctx) {
                 const isDark = htmlElement.classList.contains('dark');
                 const textColor = isDark ? '#9CA3AF' : '#4B5563';
-                
-                new Chart(ctx, {
+                const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+
+                // 先用占位数据初始化图表
+                const chart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'],
+                        labels: monthNames,
                         datasets: [{
                             label: '代码提交',
-                            data: [0, 0, 0, 0, 0, 0, 9, 9, 10, 1, 1, 0],
+                            data: new Array(12).fill(0),
                             borderColor: isDark ? '#a855f7' : '#6a11cb',
                             backgroundColor: isDark ? 'rgba(168, 85, 247, 0.1)' : 'rgba(106, 17, 203, 0.1)',
                             tension: 0.4,
@@ -725,35 +727,47 @@
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
-                            legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                mode: 'index',
-                                intersect: false
-                            }
+                            legend: { display: false },
+                            tooltip: { mode: 'index', intersect: false }
                         },
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grid: {
-                                    color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
-                                },
-                                ticks: {
-                                    color: textColor
-                                }
+                                grid: { color: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)' },
+                                ticks: { color: textColor, stepSize: 1 }
                             },
                             x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    color: textColor
-                                }
+                                grid: { display: false },
+                                ticks: { color: textColor }
                             }
                         }
                     }
                 });
+
+                // 异步获取真实 GitHub 贡献数据
+                fetch('https://github-contributions-api.deno.dev/TEARLESSVVOID.json')
+                    .then(res => res.json())
+                    .then(data => {
+                        const monthlyCommits = new Array(12).fill(0);
+                        const now = new Date();
+                        const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+
+                        (data.contributions || []).forEach(c => {
+                            const d = new Date(c.date);
+                            if (d >= oneYearAgo) {
+                                const monthIdx = d.getMonth();
+                                monthlyCommits[monthIdx] += c.count || 0;
+                            }
+                        });
+
+                        chart.data.datasets[0].data = monthlyCommits;
+                        chart.update();
+                    })
+                    .catch(() => {
+                        // 如果 API 挂了，用静态数据兜底
+                        chart.data.datasets[0].data = [0, 0, 0, 0, 0, 0, 9, 9, 10, 1, 1, 0];
+                        chart.update();
+                    });
             }
             
             // 添加页面滚动动画
