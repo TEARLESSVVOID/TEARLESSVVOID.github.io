@@ -466,7 +466,7 @@
                 
                 <!-- 活动图表 -->
                 <div class="glass-panel bg-white/30 dark:bg-gray-800/30 rounded-2xl shadow-xl p-6 mt-6 card-hover animate-fade-in" style="animation-delay: 0.2s;">
-                    <h3 class="text-lg font-semibold mb-3">GitHub 活动概览</h3>
+                    <h3 class="text-lg font-semibold mb-3" id="activityChartTitle">GitHub 活动概览</h3>
                     <div class="h-64">
                         <canvas id="activityChart"></canvas>
                     </div>
@@ -702,19 +702,31 @@
                 }
             });
             
-            // 活动图表 - 动态获取 GitHub 贡献数据（滚动12个月）
+            // 活动图表 - 动态获取 GitHub 贡献数据（近12个月）
             const ctx = document.getElementById('activityChart');
             if (ctx) {
                 const isDark = htmlElement.classList.contains('dark');
                 const textColor = isDark ? '#9CA3AF' : '#4B5563';
-                const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+                const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
                 const now = new Date();
 
-                // 生成滚动12个月的标签（从11个月前到本月）
+                // 生成近12个月的标签（含年份），如 "25/06"
                 const labels = [];
+                const labelDates = [];
                 for (let i = 11; i >= 0; i--) {
                     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                    labels.push(monthNames[d.getMonth()]);
+                    const shortYear = String(d.getFullYear()).slice(2);
+                    labels.push(shortYear + '/' + String(d.getMonth() + 1).padStart(2, '0'));
+                    labelDates.push(d);
+                }
+
+                // 更新标题显示时间范围
+                const firstLabel = labelDates[0];
+                const lastLabel = labelDates[11];
+                const rangeStr = firstLabel.getFullYear() + '年' + (firstLabel.getMonth() + 1) + '月 - ' + lastLabel.getFullYear() + '年' + (lastLabel.getMonth() + 1) + '月';
+                const chartTitle = document.getElementById('activityChartTitle');
+                if (chartTitle) {
+                    chartTitle.textContent = 'GitHub 活动概览（' + rangeStr + '）';
                 }
 
                 // 先用占位数据初始化图表
@@ -736,7 +748,17 @@
                         maintainAspectRatio: false,
                         plugins: {
                             legend: { display: false },
-                            tooltip: { mode: 'index', intersect: false }
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    title: function(items) {
+                                        const idx = items[0].dataIndex;
+                                        const d = labelDates[idx];
+                                        return d.getFullYear() + '年' + monthNames[d.getMonth()];
+                                    }
+                                }
+                            }
                         },
                         scales: {
                             y: {
