@@ -702,18 +702,26 @@
                 }
             });
             
-            // 活动图表 - 动态获取 GitHub 贡献数据
+            // 活动图表 - 动态获取 GitHub 贡献数据（滚动12个月）
             const ctx = document.getElementById('activityChart');
             if (ctx) {
                 const isDark = htmlElement.classList.contains('dark');
                 const textColor = isDark ? '#9CA3AF' : '#4B5563';
                 const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月'];
+                const now = new Date();
+
+                // 生成滚动12个月的标签（从11个月前到本月）
+                const labels = [];
+                for (let i = 11; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    labels.push(monthNames[d.getMonth()]);
+                }
 
                 // 先用占位数据初始化图表
                 const chart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: monthNames,
+                        labels: labels,
                         datasets: [{
                             label: '代码提交',
                             data: new Array(12).fill(0),
@@ -749,15 +757,17 @@
                     .then(res => res.json())
                     .then(data => {
                         const monthlyCommits = new Array(12).fill(0);
-                        const now = new Date();
-                        const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+                        const oldestMonth = new Date(now.getFullYear(), now.getMonth() - 11, 1);
 
                         (data || []).forEach(event => {
                             if (event.type === 'PushEvent') {
                                 const d = new Date(event.created_at);
-                                if (d >= oneYearAgo) {
-                                    const monthIdx = d.getMonth();
-                                    monthlyCommits[monthIdx] += (event.payload.commits || []).length || 1;
+                                if (d >= oldestMonth) {
+                                    const monthsAgo = (now.getFullYear() - d.getFullYear()) * 12 + (now.getMonth() - d.getMonth());
+                                    const idx = 11 - monthsAgo;
+                                    if (idx >= 0 && idx < 12) {
+                                        monthlyCommits[idx] += (event.payload.commits || []).length || 1;
+                                    }
                                 }
                             }
                         });
